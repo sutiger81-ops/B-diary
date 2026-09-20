@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>뷰티 다이어리 · 성분 스캔</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     OCR 엔진: Tesseract.js (브라우저 내장, 무료)
+     ※ 지옥 구간(투명·음각·곡면)은 잘 안 읽힘 = 예정된 결과.
+     나중에 이 <script>와 아래 [OCR 엔진 교체 지점]만 바꾸면
+     강한 엔진(서버 프록시 비전)으로 갈아끼울 수 있음.
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<style>
+:root{
+  /* ---- 팔레트 (이미지1 모브 그레이지 + 살구 블롭 / 이미지2 왼쪽 카드) ---- */
+  --bg1:#EAE3E4; --bg2:#EDE6E1;
+  --apricot:#F4C39B; --apricot-deep:#E79A63; --coral:#E8895A;
+  --ink:#3A322E; --ink-soft:#8B7F78;
+  --glass:rgba(255,255,255,0.34); --glass-strong:rgba(255,255,255,0.62); --glass-line:rgba(255,255,255,0.72);
+  --solid:#FBF8F5; --line:#E4DCD5; --warn:#C4562F; --warn-soft:#F7E7DF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0; min-height:100%}
+body{
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  line-height:1.5; -webkit-text-size-adjust:100%;
+  background:linear-gradient(160deg,var(--bg1),var(--bg2)); position:relative; overflow-x:hidden;
+}
+.blob{position:fixed; border-radius:50%; filter:blur(46px); opacity:.85; z-index:0; pointer-events:none}
+.blob.a{width:300px;height:300px; top:-60px; right:-70px; background:radial-gradient(circle at 35% 35%, #FBD6B0, var(--apricot) 55%, var(--apricot-deep));}
+.blob.b{width:260px;height:260px; top:38%; left:-90px; background:radial-gradient(circle at 40% 40%, #FBD1AE, var(--apricot) 60%, var(--apricot-deep));}
+.blob.c{width:220px;height:220px; bottom:-60px; right:-40px; background:radial-gradient(circle at 45% 45%, #F9D9BE, var(--apricot) 65%, var(--apricot-deep)); opacity:.7}
+
+.wrap{position:relative; z-index:1; max-width:520px; margin:0 auto; padding:24px 16px 44px}
+
+.hero{
+  background:var(--glass); -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
+  border:1px solid var(--glass-line); border-radius:26px; padding:26px 22px 22px;
+  box-shadow:0 8px 30px rgba(120,90,70,0.12), inset 0 1px 0 rgba(255,255,255,0.6); margin-bottom:16px;
+}
+.hero h1{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:30px; letter-spacing:-.01em; margin:0; color:var(--ink)}
+.hero .en{font-family:"Fraunces",serif; font-weight:400; font-size:13px; letter-spacing:.22em; text-transform:uppercase; color:var(--coral); margin:2px 0 12px}
+.hero .sub{font-size:13.5px; color:#6f635c; margin:0; max-width:34ch}
+
+.card{
+  background:var(--glass); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+  border:1px solid var(--glass-line); border-radius:22px; padding:18px;
+  box-shadow:0 6px 22px rgba(120,90,70,0.10), inset 0 1px 0 rgba(255,255,255,0.55); margin-bottom:14px;
+}
+.card.solid{background:var(--solid); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}
+
+button{font-family:inherit; cursor:pointer}
+.pill{width:100%; height:58px; border:none; border-radius:30px; color:#fff; font-size:16px; font-weight:600;
+  background:linear-gradient(135deg,#F0A472,var(--coral)); display:flex; align-items:center; justify-content:center; gap:10px;
+  box-shadow:0 6px 18px rgba(232,137,90,0.38)}
+.pill:active{transform:translateY(1px)}
+.pill .arw{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.25); display:flex;align-items:center;justify-content:center;font-size:15px}
+.ghost{width:100%; height:48px; border:1px solid var(--glass-line); border-radius:24px; background:var(--glass-strong); color:var(--ink); font-size:14px; font-weight:500}
+.row{display:flex; gap:8px} .row .ghost{flex:1}
+
+.field{display:flex; align-items:center; gap:10px; height:50px; padding:0 8px 0 6px; background:var(--glass-strong); border:1px solid var(--glass-line); border-radius:25px; margin-top:10px}
+.field .ic{width:36px;height:36px;border-radius:50%;background:#fff9; display:flex;align-items:center;justify-content:center; font-size:16px; flex:none}
+.field input{border:none; background:none; outline:none; flex:1; font-family:inherit; font-size:14.5px; color:var(--ink)}
+
+.opt{display:flex; align-items:center; gap:9px; font-size:13px; color:#6f635c; margin-top:14px}
+.opt input{width:18px; height:18px; accent-color:var(--coral)}
+
+#preview{width:100%; border-radius:16px; display:none; margin-top:14px; max-height:340px; object-fit:contain; background:#0001}
+canvas{display:none}
+
+#status{font-size:13px; color:#6f635c; margin-top:12px; min-height:18px}
+.bar{height:7px; background:#0000000f; border-radius:7px; overflow:hidden; margin-top:10px; display:none}
+.bar > i{display:block; height:100%; width:0; background:linear-gradient(90deg,#F0A472,var(--coral)); transition:width .2s}
+
+.section-title{font-family:"Nanum Myeongjo",serif; font-weight:700; font-size:16px; margin:0 0 12px; color:var(--ink)}
+.section-title .n{font-family:-apple-system,sans-serif; font-weight:600; font-size:13px}
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chip{font-size:12.5px; background:#F3E4D6; color:#8a4a25; padding:6px 11px; border-radius:20px}
+.chip.new{background:var(--warn-soft); color:var(--warn); font-weight:600}
+
+textarea{width:100%; min-height:112px; border:1px solid var(--line); border-radius:14px; padding:12px 14px; font-family:inherit; font-size:13.5px; color:var(--ink); line-height:1.65; resize:vertical; background:#fff; margin-top:12px}
+.hint{font-size:12px; color:var(--ink-soft); margin-top:8px}
+
+.warnbox{background:var(--warn-soft); border:1px solid #EAC6B6; border-radius:16px; padding:14px 16px; font-size:13px; color:#7A3418; display:none; margin-top:14px; line-height:1.55}
+.warnbox b{color:var(--warn)}
+
+.saved{font-size:12.5px; color:#6f635c} .saved b{color:var(--ink)}
+.diff-empty{font-size:13px; color:var(--ink-soft)}
+.footnote{font-size:11.5px; color:#7a6f68; text-align:center; margin-top:26px; line-height:1.7} .footnote b{color:var(--coral)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="blob a"></div><div class="blob b"></div><div class="blob c"></div>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="en">Beauty Diary</div>
+    <h1>뷰티 다이어리</h1>
+    <p class="sub">성분표를 찍으면 성분만 뽑아, 내가 괜찮았던 제품과 조용히 비교해요.</p>
+  </section>
+
+  <div class="card">
+    <button class="pill" id="shoot">성분표 찍기 <span class="arw">→</span></button>
+    <input id="file" type="file" accept="image/*" capture="environment" class="hidden">
+    <label class="opt"><input type="checkbox" id="enhance" checked> 흑백·대비 보정 후 인식 (권장)</label>
+    <img id="preview" alt="찍은 성분표 미리보기">
+    <canvas id="cv"></canvas>
+    <div class="bar" id="bar"><i></i></div>
+    <div id="status"></div>
+    <div class="warnbox" id="warn">
+      <b>잘 안 읽혔어요.</b> 투명 용기·둥근 병·음각 글씨는 원래 어렵습니다.
+      평평한 면이나 종이 상자 쪽을 다시 찍어보세요. <span style="opacity:.8">(나중엔 바코드로 자동 조회 예정)</span>
+    </div>
+  </div>
+
+  <div class="card solid hidden" id="resultCard">
+    <p class="section-title">읽어낸 성분 <span class="n" id="count" style="color:var(--coral)"></span></p>
+    <div class="chips" id="chips"></div>
+    <p class="hint">틀린 글자가 있으면 아래에서 직접 고치세요. 성분은 한 글자만 달라도 다른 물질입니다.</p>
+    <textarea id="edit" spellcheck="false" placeholder="성분들이 여기에 표시됩니다"></textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="ghost" id="saveRef">기준으로 저장</button>
+      <button class="ghost" id="compare">기준과 비교</button>
+    </div>
+  </div>
+
+  <div class="card solid hidden" id="diffCard">
+    <p class="section-title">기준엔 없던 성분 <span class="n" style="color:var(--warn)" id="diffCount"></span></p>
+    <div class="chips" id="diffChips"></div>
+    <p class="diff-empty hidden" id="diffEmpty">기준 제품에 없던 성분이 없어요. 성분 구성이 비슷합니다.</p>
+    <p class="hint" id="refName"></p>
+  </div>
+
+  <div class="card">
+    <p class="saved" id="savedInfo">기준 제품: <b>아직 없음</b></p>
+    <div class="field"><span class="ic">🧴</span><input id="refInput" placeholder="기준 제품 이름 (저장 시 사용)"></div>
+    <button class="ghost" id="clearRef" style="margin-top:10px">기준 제품 지우기</button>
+  </div>
+
+  <div class="footnote">
+    이 앱은 의료 조언이 아니라 <b>기록·비교 도구</b>입니다.<br>
+    성분이 몸에 맞는지 판단은 본인·전문의 몫이에요.
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let lastIngredients = [];
+
+$("shoot").onclick = () => $("file").click();
+$("file").onchange = e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f); const img = $("preview");
+  img.onload = () => { URL.revokeObjectURL(url); runOCR(img); };
+  img.src = url; img.style.display = "block";
+};
+
+/* ====== 이미지 보정 강도 ====== 숫자만 바꾸면 세기 조절. (원근보정 OpenCV는 나중에 이 자리에) */
+function preprocess(img){
+  const MAX = 2000, CONTRAST = 1.35;
+  let w = img.naturalWidth, h = img.naturalHeight;
+  const scale = Math.min(1, MAX / Math.max(w, h));
+  w = Math.round(w*scale); h = Math.round(h*scale);
+  const cv = $("cv"); cv.width = w; cv.height = h;
+  const ctx = cv.getContext("2d", { willReadFrequently:true });
+  ctx.drawImage(img, 0, 0, w, h);
+  if (!$("enhance").checked) return cv;
+  const d = ctx.getImageData(0,0,w,h), p = d.data;
+  for (let i=0;i<p.length;i+=4){
+    let g = 0.299*p[i]+0.587*p[i+1]+0.114*p[i+2];
+    g = (g-128)*CONTRAST + 128; g = g<0?0:g>255?255:g;
+    p[i]=p[i+1]=p[i+2]=g;
+  }
+  ctx.putImageData(d,0,0); return cv;
+}
+
+/* ====== OCR 엔진 교체 지점 ====== 지금: Tesseract 한국어(첫 실행 느림). 나중에 이 함수 속만 교체. */
+async function runOCR(img){
+  $("warn").style.display="none"; $("resultCard").classList.add("hidden"); $("diffCard").classList.add("hidden");
+  $("bar").style.display="block"; setBar(0); setStatus("이미지 준비 중…");
+  const canvas = preprocess(img);
+  try{
+    setStatus("글자 인식 중… (첫 실행은 한국어 데이터를 받느라 느려요)");
+    const worker = await Tesseract.createWorker("kor", 1, {
+      logger: m => { if (m.status==="recognizing text") setBar(m.progress*100); }
+    });
+    const { data } = await worker.recognize(canvas);
+    await worker.terminate();
+    $("bar").style.display="none";
+    handleResult(data.text || "", data.confidence || 0);
+  }catch(err){ $("bar").style.display="none"; setStatus("인식 오류. 새로고침 후 다시 시도해 주세요."); console.error(err); }
+}
+function setBar(p){ $("bar").firstElementChild.style.width=p+"%"; }
+function setStatus(t){ $("status").textContent=t; }
+
+/* ====== 성분 파싱 규칙 ====== */
+function parseIngredients(text){
+  let t = text.replace(/\s+/g," ").trim();
+  const s = t.search(/(전성분|INGREDIENTS|성분)\s*[:：]?/i);
+  if (s>=0) t = t.slice(s).replace(/(전성분|INGREDIENTS|성분)\s*[:：]?/i,"");
+  const e = t.search(/(사용할 때|사용방법|주의사항|제조|용량|CAUTION|HOW TO|WWW|MADE IN)/i);
+  if (e>20) t = t.slice(0,e);
+  return t.split(/[,·、]/).map(x=>x.trim()).filter(x=> x.length>=2 && x.length<=40 && /[가-힣A-Za-z]/.test(x));
+}
+function handleResult(raw, conf){
+  const list = parseIngredients(raw); lastIngredients = list;
+  if (list.length < 3 || conf < 45){ setStatus(""); $("warn").style.display="block"; if(!list.length) return; }
+  else setStatus("인식 완료. 아래에서 확인하고 필요하면 고치세요.");
+  renderChips(); $("edit").value = list.join(", "); $("resultCard").classList.remove("hidden");
+}
+function renderChips(){
+  $("count").textContent = "· " + lastIngredients.length + "개";
+  $("chips").innerHTML = lastIngredients.map(x=>`<span class="chip">${esc(x)}</span>`).join("");
+}
+$("edit").addEventListener("input", ()=>{
+  lastIngredients = $("edit").value.split(",").map(s=>s.trim()).filter(Boolean); renderChips();
+});
+
+function loadRef(){ try{ return JSON.parse(localStorage.getItem("bd_ref")||"null"); }catch(e){ return null; } }
+function saveRef(o){ try{ localStorage.setItem("bd_ref", JSON.stringify(o)); }catch(e){} }
+function norm(s){ return s.replace(/\s|\(.*?\)/g,"").toLowerCase(); }
+$("saveRef").onclick = ()=>{
+  if(!lastIngredients.length) return;
+  const name = ($("refInput").value.trim()) || (prompt("이 제품 이름") || "이름 없는 기준 제품");
+  saveRef({name, list:lastIngredients, at:Date.now()}); refreshSaved();
+  setStatus(`'${name}'을(를) 기준으로 저장했어요.`);
+};
+$("compare").onclick = ()=>{
+  const ref = loadRef(); if(!ref){ alert("먼저 기준 제품을 저장하세요."); return; }
+  const refSet = new Set(ref.list.map(norm));
+  const extra = lastIngredients.filter(x=> !refSet.has(norm(x)));
+  $("diffCard").classList.remove("hidden"); $("refName").textContent = `기준: ${ref.name}`;
+  if(!extra.length){ $("diffChips").innerHTML=""; $("diffCount").textContent=""; $("diffEmpty").classList.remove("hidden"); }
+  else{ $("diffEmpty").classList.add("hidden"); $("diffCount").textContent="· "+extra.length+"개";
+    $("diffChips").innerHTML = extra.map(x=>`<span class="chip new">${esc(x)}</span>`).join(""); }
+};
+$("clearRef").onclick = ()=>{ try{ localStorage.removeItem("bd_ref"); }catch(e){} refreshSaved(); };
+function refreshSaved(){ const r=loadRef(); $("savedInfo").innerHTML="기준 제품: <b>"+(r?esc(r.name):"아직 없음")+"</b>"; if(r&&!$("refInput").value) $("refInput").value=r.name; }
+function esc(s){ return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+refreshSaved();
+</script>
+</body>
+</html>
