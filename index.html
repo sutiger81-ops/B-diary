@@ -391,6 +391,8 @@ function prep(f){
   });
 }
 
+/* 영어 면만 찍혔을 때를 위한 화장품 영어 → 한글 표기 (DB 이름이 한글이라서) */
+var EN2KO={cica:'시카',calming:'카밍',calm:'카밍',toner:'토너',tonerpad:'토너패드',cream:'크림',serum:'세럼',essence:'에센스',ampoule:'앰플',ampule:'앰플',lotion:'로션',emulsion:'에멀전',cleanser:'클렌저',cleansing:'클렌징',foam:'폼',oil:'오일',water:'워터',mist:'미스트',mask:'마스크',pad:'패드',pads:'패드',sun:'선',sunscreen:'선크림',suncream:'선크림',sunstick:'선스틱',gel:'젤',balm:'밤',barrier:'배리어',repair:'리페어',soothing:'수딩',moisture:'모이스처',moisturizing:'모이스처라이징',moisturizer:'모이스처라이저',hydra:'하이드라',hydro:'하이드로',hydrating:'하이드레이팅',aqua:'아쿠아',clear:'클리어',big:'빅',daily:'데일리',deep:'딥',pure:'퓨어',fresh:'프레시',green:'그린',tea:'티',tree:'트리',teatree:'티트리',centella:'센텔라',madeca:'마데카',hyaluronic:'히알루로닉',hyal:'히알',collagen:'콜라겐',vitamin:'비타민',retinol:'레티놀',niacinamide:'나이아신아마이드',peptide:'펩타이드',ceramide:'세라마이드',panthenol:'판테놀',aloe:'알로에',rice:'라이스',honey:'허니',propolis:'프로폴리스',snail:'스네일',heartleaf:'어성초',toning:'토닝',glow:'글로우',bright:'브라이트',brightening:'브라이트닝',whitening:'화이트닝',white:'화이트',black:'블랙',red:'레드',blue:'블루',pink:'핑크',intense:'인텐스',intensive:'인텐시브',gentle:'젠틀',mild:'마일드',sensitive:'센서티브',relief:'릴리프',care:'케어',skin:'스킨',booster:'부스터',peeling:'필링',cushion:'쿠션',lip:'립',tint:'틴트',body:'바디',hand:'핸드',shampoo:'샴푸',treatment:'트리트먼트',perfect:'퍼펙트',origin:'오리진',original:'오리지널',premium:'프리미엄',plus:'플러스',ultra:'울트라',super:'슈퍼',light:'라이트',rich:'리치',soft:'소프트',smooth:'스무스',cooling:'쿨링',vegan:'비건',pore:'포어',acne:'아크네',trouble:'트러블',spot:'스팟',firming:'퍼밍',lifting:'리프팅',wrinkle:'링클',essential:'에센셜',active:'액티브',therapy:'테라피',derma:'더마',atobarrier:'아토베리어',bubble:'버블',micellar:'미셀라',scrub:'스크럽',sheet:'시트',sleeping:'슬리핑',eye:'아이'};
 var TYPES=['토너','스킨','로션','에멀전','에센스','세럼','앰플','크림','젤','밤','오일','미스트','클렌저','폼','워터','패드','마스크','팩','선크림','선스틱','쿠션','립','샴푸','바디'];
 /* 읽어온 네 칸으로 DB에서 후보 찾기 — 한 토막 틀려도 점수로 흡수된다 */
 function matchFields(f){
@@ -405,11 +407,20 @@ function matchFields(f){
   }
   var price=f['가격']?parseInt(String(f['가격']).replace(/\D/g,''),10)||0:0;
   var toks=[];
-  ['제품명_한글','제품명_영문'].forEach(function(k){
-    if(f[k])String(f[k]).split(/[\s·\/]+/).forEach(function(t){t=norm(t);if(t)toks.push(t)});
+  ['제품명_한글','제품명_영문','제품명_한글추정'].forEach(function(k){
+    if(f[k])String(f[k]).split(/[\s·\/&+,]+/).forEach(function(t){
+      t=norm(t);if(!t)return;
+      toks.push(t);
+      if(EN2KO[t]&&toks.indexOf(EN2KO[t])<0)toks.push(EN2KO[t]);   // 영어 → 한글 표기로도 찾기
+    });
   });
   var brands=[];
-  ['브랜드_한글','브랜드_영문'].forEach(function(k){if(f[k]){var b=norm(f[k]);if(b)brands.push(b)}});
+  ['브랜드_한글','브랜드_영문','브랜드_한글추정'].forEach(function(k){
+    if(!f[k])return;
+    var raw=String(f[k]);
+    if(/[×✕]|\sx\s/i.test(raw))return;     // CICA×HYALON 같은 콜라보 문구는 브랜드가 아님
+    var b=norm(raw);if(b)brands.push(b);
+  });
   if(!toks.length&&!brands.length)return[];
   var qjoin=toks.join('|');
   var out=[];
@@ -436,10 +447,17 @@ function matchFields(f){
   return out.slice(0,20);
 }
 
+var RETAKE='<div class="card" style="margin-top:4px">'
+  +'<div class="ttl" style="font-size:15px">다른 면을 찍어 보세요</div>'
+  +'<p style="margin:8px 0 0;font-size:13px;color:var(--ink-2);line-height:1.6">'
+  +'· 다이소 제품이면 <b>가격표</b>(품번이 적힌 스티커) 쪽<br>'
+  +'· 그 밖에는 <b>한글 제품명</b>이 보이는 쪽<br>'
+  +'· 그래도 안 되면 위 검색창에 브랜드를 두세 글자 치세요</p>'
+  +'<button class="act y" id="retake" style="width:100%;margin-top:12px;background:var(--accent);border-color:var(--accent);color:#fff">다시 찍기</button>'
+  +'</div>';
 function camFail(msg){
-  $('listh').textContent='직접 찾기';
-  $('results').innerHTML='<p class="empty">'+esc(msg)+'<br><br>위 검색창에 브랜드를 두세 글자 치거나,<br>다이소 가격표의 품번을 그대로 넣어 보세요.</p>';
-  setTimeout(function(){$('q').focus()},200);
+  $('listh').textContent='못 찾았습니다';
+  $('results').innerHTML='<p class="empty" style="padding:14px 10px 6px">'+esc(msg)+'</p>'+RETAKE;
 }
 
 function showMatches(f,usage){
@@ -454,7 +472,7 @@ function showMatches(f,usage){
     +'</div>';
   if(!hits.length){
     $('listh').textContent='못 찾았습니다';
-    $('results').innerHTML=head+'<p class="empty">읽기는 됐는데 DB에 맞는 제품이 없습니다.<br>검색창에 직접 쳐보세요.</p>';
+    $('results').innerHTML=head+RETAKE;
     return;
   }
   var top=(hits.length===1)||(hits[0].sc-hits[1].sc>=10&&hits[0].sc>=hits[1].sc*1.2);
@@ -527,6 +545,7 @@ function search(raw){
 $('results').addEventListener('click',function(e){
   var mb=e.target.closest('#morebtn');
   if(mb){$('more').hidden=false;mb.remove();return}
+  if(e.target.closest('#retake')){shoot();return}
   var b=e.target.closest('[data-i]');if(b)go('detail',+b.dataset.i);
 });
 
