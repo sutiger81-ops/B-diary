@@ -97,7 +97,8 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
   display:grid;place-items:center;margin-top:-26px;box-shadow:0 6px 18px rgba(196,98,47,.45);
   border:4px solid var(--surface-solid);transition:transform .15s}
 .fab:active{transform:scale(.93)}
-#shot{display:none}
+#shot{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
+label.fab,label.tile,label.act{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 /* 진행 */
 .load{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-top:14px}
@@ -173,11 +174,11 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
     <div class="sec">
       <h2 class="sec-h">기록 도구</h2>
       <div class="grid2">
-        <button class="tile" data-go="scan">
+        <label class="tile" for="shot" role="button" tabindex="0">
           <span class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M7 12h10"/></svg></span>
           <span class="tt">성분 보기</span>
           <span class="ts">제품 찍어서<br>전성분 확인</span>
-        </button>
+        </label>
         <button class="tile hot" data-go="mine">
           <span class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S4 15.6 4 10a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 5.6-8 10.5-8 10.5Z"/></svg></span>
           <span class="num" id="n-mine">0</span>
@@ -243,8 +244,8 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20H4Z"/></svg>홈</button>
     <button class="tab" data-go="mine">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S4 15.6 4 10a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 5.6-8 10.5-8 10.5Z"/></svg>내 기준</button>
-    <button class="fab" id="cam" aria-label="제품 찍기">
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.4-2h7.2L17 8h3v11H4Z"/><circle cx="12" cy="13" r="3.4"/></svg></button>
+    <label class="fab" id="cam" for="shot" role="button" tabindex="0" aria-label="제품 찍기">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.4-2h7.2L17 8h3v11H4Z"/><circle cx="12" cy="13" r="3.4"/></svg></label>
     <button class="tab" data-go="safe">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 19 6v6c0 4.2-2.9 7.4-7 8.5-4.1-1.1-7-4.3-7-8.5V6Z"/></svg>안전지대</button>
     <button class="tab" data-go="trig">
@@ -254,7 +255,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
 <input type="file" id="shot" accept="image/*" capture="environment">
 
 <script>
-var V=[],P=[],IDX=[],ready=false,lastView='home';
+var V=[],P=[],IDX=[],ready=false,lastView='home',pendingShot=null;
 var $=function(id){return document.getElementById(id)};
 
 /* ---- 내 기록: 폰에만 저장 ---- */
@@ -295,7 +296,7 @@ function load(){
   $('loadbar').parentNode.className='bar run';
   var tick=setInterval(function(){
     if(ready)return;
-    $('loadtx').textContent='성분 데이터를 불러오는 중입니다 · '+Math.round((Date.now()-t0)/1000)+'초 · 멈춘 게 아닙니다.';
+    $('loadtx').textContent=(pendingShot?'사진은 받았습니다. 성분 데이터를 마저 받는 중입니다':'성분 데이터를 불러오는 중입니다')+' · '+Math.round((Date.now()-t0)/1000)+'초 · 멈춘 게 아닙니다.';
   },400);
 
   fetch('products.json',{cache:'default'})
@@ -316,7 +317,8 @@ function load(){
       $('loadbar').parentNode.className='bar';
       $('loadbar').style.width='100%';
       ready=true;
-      setTimeout(function(){$('load').hidden=true;go('home')},150);
+      setTimeout(function(){$('load').hidden=true;go('home');
+        if(pendingShot){var ps=pendingShot;pendingShot=null;runShot(ps)}},150);
     })
     .catch(function(e){
       clearInterval(tick);
@@ -359,7 +361,13 @@ function counts(){
 /* ---- 카메라 → 사진 읽기 → 제품 찾기 ---- */
 var FN_URL='https://jtufhejmunonwvxwgqmz.supabase.co/functions/v1/read-label';
 function shoot(){$('shot').click()}
-$('cam').addEventListener('click',shoot);
+/* 카메라는 <label for="shot">이 직접 연다 — 스크립트로 대신 누르면 일부 폰·앱 안 브라우저가 막는다.
+   키보드로 누를 때만 대신 눌러 준다. */
+document.addEventListener('keydown',function(e){
+  var l=e.target.closest&&e.target.closest('label[for="shot"]');
+  if(l&&(e.key==='Enter'||e.key===' ')){e.preventDefault();shoot()}
+});
+
 
 function norm(s){return String(s==null?'':s).toLowerCase().replace(/[^0-9a-z가-힣]/g,'')}
 
@@ -453,7 +461,7 @@ var RETAKE='<div class="card" style="margin-top:4px">'
   +'· 다이소 제품이면 <b>가격표</b>(품번이 적힌 스티커) 쪽<br>'
   +'· 그 밖에는 <b>한글 제품명</b>이 보이는 쪽<br>'
   +'· 그래도 안 되면 위 검색창에 브랜드를 두세 글자 치세요</p>'
-  +'<button class="act y" id="retake" style="width:100%;margin-top:12px;background:var(--accent);border-color:var(--accent);color:#fff">다시 찍기</button>'
+  +'<label class="act y" id="retake" for="shot" role="button" style="display:block;text-align:center;width:100%;margin-top:12px;background:var(--accent);border-color:var(--accent);color:#fff">다시 찍기</label>'
   +'</div>';
 function camFail(msg){
   $('listh').textContent='못 찾았습니다';
@@ -491,6 +499,14 @@ function showMatches(f,usage){
 $('shot').addEventListener('change',function(){
   var f=this.files&&this.files[0];this.value='';
   if(!f)return;
+  if(!ready){   // 성분 데이터를 아직 받는 중이면 사진을 맡아 뒀다가 끝나는 대로 이어서 처리
+    pendingShot=f;
+    $('loadtx').textContent='사진은 받았습니다. 성분 데이터를 마저 받는 대로 바로 찾겠습니다. 멈춘 게 아닙니다.';
+    return;
+  }
+  runShot(f);
+});
+function runShot(f){
   var im=$('photo');im.src=URL.createObjectURL(f);im.hidden=false;
   $('listh').textContent='사진 읽는 중';
   $('results').innerHTML='<p class="empty" id="camstat">사진을 준비하고 있습니다…</p>';
@@ -512,7 +528,7 @@ $('shot').addEventListener('change',function(){
       })
       .catch(function(){clearInterval(tick);camFail('지금은 사진 읽기가 안 됩니다.')});
   });
-});
+}
 
 /* ---- 검색 ---- */
 var timer;
@@ -534,7 +550,7 @@ function search(raw){
   for(var i=0;i<IDX.length&&hit.length<60;i++){if(IDX[i].indexOf(k)>-1)hit.push(i)}
   $('listh').textContent='검색 결과 '+hit.length+(hit.length>=60?'+':'')+'건';
   if(!hit.length){
-    $('results').innerHTML='<p class="empty">찾는 제품이 없습니다.<br>지금은 올리브영·다이소 10,948개가 들어 있습니다.<br>브랜드명이나 다이소 품번으로 다시 찾아보세요.</p>';
+    $('results').innerHTML='<p class="empty">찾는 제품이 없습니다.<br>지금은 올리브영·다이소 '+P.length.toLocaleString()+'개가 들어 있습니다.<br>브랜드명이나 다이소 품번으로 다시 찾아보세요.</p>';
     go('list');return;
   }
   var h='';
@@ -545,7 +561,6 @@ function search(raw){
 $('results').addEventListener('click',function(e){
   var mb=e.target.closest('#morebtn');
   if(mb){$('more').hidden=false;mb.remove();return}
-  if(e.target.closest('#retake')){shoot();return}
   var b=e.target.closest('[data-i]');if(b)go('detail',+b.dataset.i);
 });
 
