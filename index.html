@@ -216,6 +216,7 @@ label.fab,label.tile,label.act{cursor:pointer;-webkit-tap-highlight-color:transp
         </button>
       </div>
     </div>
+    <p style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v8</p>
   </div>
 
   <!-- 검색 결과 -->
@@ -252,7 +253,8 @@ label.fab,label.tile,label.act{cursor:pointer;-webkit-tap-highlight-color:transp
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 8v5"/><circle cx="12" cy="16.6" r="1.1" fill="currentColor" stroke="none"/><path d="M10.3 3.9 2.8 17.1A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.9L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>주의</button>
   </div>
 </nav>
-<input type="file" id="shot" accept="image/*" capture="environment">
+<input type="file" id="shot" accept="image/*">
+<div id="toast" hidden style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--bg);font-size:12.5px;font-weight:500;padding:9px 16px;border-radius:999px;box-shadow:var(--shadow);max-width:88%;text-align:center">버튼이 눌렸습니다</div>
 
 <script>
 var V=[],P=[],IDX=[],ready=false,lastView='home',pendingShot=null;
@@ -363,6 +365,11 @@ var FN_URL='https://jtufhejmunonwvxwgqmz.supabase.co/functions/v1/read-label';
 function shoot(){$('shot').click()}
 /* 카메라는 <label for="shot">이 직접 연다 — 스크립트로 대신 누르면 일부 폰·앱 안 브라우저가 막는다.
    키보드로 누를 때만 대신 눌러 준다. */
+var toastT;
+function toast(m,ms){var t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},ms||2400)}
+document.addEventListener('click',function(e){
+  if(e.target.closest&&e.target.closest('label[for="shot"]'))toast('버튼이 눌렸습니다 · 선택창을 여는 중…');
+});
 document.addEventListener('keydown',function(e){
   var l=e.target.closest&&e.target.closest('label[for="shot"]');
   if(l&&(e.key==='Enter'||e.key===' ')){e.preventDefault();shoot()}
@@ -497,6 +504,7 @@ function showMatches(f,usage){
 }
 
 $('shot').addEventListener('change',function(){
+  $('toast').hidden=true;
   var f=this.files&&this.files[0];this.value='';
   if(!f)return;
   if(!ready){   // 성분 데이터를 아직 받는 중이면 사진을 맡아 뒀다가 끝나는 대로 이어서 처리
