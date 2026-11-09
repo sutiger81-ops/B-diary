@@ -130,6 +130,15 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
 .chip{background:var(--surface-solid);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px;font-weight:500;color:var(--ink)}
 .chip.bad{background:var(--warn);border-color:var(--warn);color:#fff;font-weight:700}
 .chip.good{background:var(--good-soft);border-color:var(--good);color:var(--good);font-weight:700}
+.item .nb{font-size:15px;font-weight:700;line-height:1.4;color:var(--ink);letter-spacing:-.01em}
+.item .sl{color:var(--muted);font-weight:500}
+.item.best{border-color:var(--accent);border-width:2px}
+.flags{display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap}
+.flag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px}
+.flag.best{background:var(--accent-soft);color:var(--accent)}
+.flag.ok{background:var(--good-soft);color:var(--good)}
+.flag.no{background:var(--warn-soft);color:var(--warn)}
+.morebtn{width:100%;margin-top:2px;border-radius:14px;padding:13px;font-size:14px;font-weight:700;border:1.5px dashed var(--line);background:var(--surface);color:var(--ink-2)}
 .tag{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10.5px;font-weight:700;margin-left:6px}
 .tag.oy{background:var(--good-soft);color:var(--good)}
 .tag.ds{background:var(--accent-soft);color:var(--accent)}
@@ -249,9 +258,18 @@ var V=[],P=[],IDX=[],ready=false,lastView='home';
 var $=function(id){return document.getElementById(id)};
 
 /* ---- 내 기록: 폰에만 저장 ---- */
+/* 기록은 '몇 번째'가 아니라 '품번'으로 저장한다 — 데이터를 정리해 순서가 바뀌어도 안 꼬이게 */
 var MY={};
-try{MY=JSON.parse(localStorage.getItem('bdiary.my')||'{}')}catch(e){MY={}}
-function saveMy(){try{localStorage.setItem('bdiary.my',JSON.stringify(MY))}catch(e){}}
+function saveMy(){
+  try{var o={};for(var k in MY){if(P[k])o[P[k][6]]=MY[k]}
+      localStorage.setItem('bdiary.my2',JSON.stringify(o))}catch(e){}
+}
+function restoreMy(){
+  try{var o=JSON.parse(localStorage.getItem('bdiary.my2')||'{}'),map={};
+      for(var i=0;i<P.length;i++)map[P[i][6]]=i;
+      for(var id in o){if(map[id]!=null)MY[map[id]]=o[id]}
+      localStorage.removeItem('bdiary.my');}catch(e){}
+}
 
 /* ---- 차집합 엔진: 걸러낸 것에만 있고 괜찮은 것엔 없는 성분 ---- */
 function sets(){
@@ -294,6 +312,7 @@ function load(){
       clearInterval(tick);
       V=d.v;P=d.p;
       for(var i=0;i<P.length;i++)IDX.push((P[i][6]+' '+P[i][1]+' '+P[i][0]).toLowerCase().replace(/\s+/g,''));
+      restoreMy();
       $('loadbar').parentNode.className='bar';
       $('loadbar').style.width='100%';
       ready=true;
@@ -372,15 +391,19 @@ function prep(f){
   });
 }
 
+var TYPES=['토너','스킨','로션','에멀전','에센스','세럼','앰플','크림','젤','밤','오일','미스트','클렌저','폼','워터','패드','마스크','팩','선크림','선스틱','쿠션','립','샴푸','바디'];
 /* 읽어온 네 칸으로 DB에서 후보 찾기 — 한 토막 틀려도 점수로 흡수된다 */
 function matchFields(f){
   if(!f)return[];
   var code=f['품번']?String(f['품번']).replace(/\D/g,''):'';
+  matchFields.codeMiss='';
   if(code.length>=5){
     var ex=[];
     for(var i=0;i<P.length;i++)if(String(P[i][6])===code)ex.push({i:i,sc:999});
     if(ex.length)return ex;
+    matchFields.codeMiss=code;   // 품번을 읽었는데 DB에 없음 → 잘못 읽었을 수 있다
   }
+  var price=f['가격']?parseInt(String(f['가격']).replace(/\D/g,''),10)||0:0;
   var toks=[];
   ['제품명_한글','제품명_영문'].forEach(function(k){
     if(f[k])String(f[k]).split(/[\s·\/]+/).forEach(function(t){t=norm(t);if(t)toks.push(t)});
@@ -388,17 +411,26 @@ function matchFields(f){
   var brands=[];
   ['브랜드_한글','브랜드_영문'].forEach(function(k){if(f[k]){var b=norm(f[k]);if(b)brands.push(b)}});
   if(!toks.length&&!brands.length)return[];
+  var qjoin=toks.join('|');
   var out=[];
   for(var j=0;j<P.length;j++){
-    var hay=norm(P[j][1]+P[j][0]),hit=0;
-    for(var t=0;t<toks.length;t++)if(hay.indexOf(toks[t])>-1)hit++;
+    var hay=norm(P[j][1]+P[j][0]),hit=0,cov=0;
+    for(var t=0;t<toks.length;t++)if(hay.indexOf(toks[t])>-1){hit++;cov+=toks[t].length}
     var bb=0;
     for(var b2=0;b2<brands.length;b2++){
       var bn=brands[b2];
       if(bn.length>=2&&hay.indexOf(bn.slice(0,Math.min(5,bn.length)))>-1){bb=15;break}
     }
     if(!hit&&!bb)continue;
-    out.push({i:j,sc:hit*10+bb+(toks.length?hit/toks.length*5:0)});
+    var sc=hit*10+bb+(toks.length?hit/toks.length*5:0);
+    sc+=6*Math.min(1,cov/Math.max(hay.length,1));   // 제품명이 읽은 글자로 많이 채워질수록 (군더더기 적을수록) 가산
+    if(price&&P[j][3]===price)sc+=8;                  // 가격표 금액이 같으면 가산 (다이소 구분에 강함)
+    // 제형이 다르면 감점 — 같은 브랜드 같은 라인의 토너/크림/에센스를 갈라준다
+    for(var ty=0;ty<TYPES.length;ty++){
+      var w=TYPES[ty],inQ=qjoin.indexOf(w)>-1,inP=hay.indexOf(w)>-1;
+      if(inQ&&!inP)sc-=12; else if(!inQ&&inP)sc-=4;
+    }
+    out.push({i:j,sc:sc});
   }
   out.sort(function(a,b){return b.sc-a.sc});
   return out.slice(0,20);
@@ -416,7 +448,8 @@ function showMatches(f,usage){
   var pn=f['제품명_한글']||f['제품명_영문']||'';
   var head='<div class="card" style="margin-bottom:12px"><div class="sub">사진에서 읽은 것</div>'
     +'<div class="ttl">'+esc(bn||'브랜드 못 읽음')+' '+esc(pn)+'</div>'
-    +(f['품번']?'<div class="meta">품번 '+esc(f['품번'])+'</div>':'')
+    +(f['품번']?'<div class="meta">품번 '+esc(f['품번'])+(matchFields.codeMiss?' · <span style="color:var(--warn)">이 품번은 목록에 없습니다. 숫자를 잘못 읽었을 수 있어요</span>':'')+'</div>':'')
+    +(f['가격']?'<div class="meta">가격표 '+esc(f['가격'])+'</div>':'')
     +(usage?'<div class="meta">토큰 '+(usage.input_tokens||0)+' + '+(usage.output_tokens||0)+'</div>':'')
     +'</div>';
   if(!hits.length){
@@ -424,15 +457,16 @@ function showMatches(f,usage){
     $('results').innerHTML=head+'<p class="empty">읽기는 됐는데 DB에 맞는 제품이 없습니다.<br>검색창에 직접 쳐보세요.</p>';
     return;
   }
-  var h=head,top=(hits.length===1)||(hits[0].sc>=hits[1].sc*1.5);
-  for(var k=0;k<hits.length;k++){
-    var p=P[hits[k].i],mk=MY[hits[k].i],first=(k===0&&top);
-    h+='<button class="item" data-i="'+hits[k].i+'"'+(first?' style="border-color:var(--accent);border-width:2px"':'')+'>'
-      +'<div class="b">'+esc(p[1])+(first?' · 가장 비슷함':'')+(mk==='ok'?' · 괜찮았음':mk==='no'?' · 안 맞았음':'')+'</div>'
-      +'<div class="n">'+esc(p[0])+'</div>'
-      +'<div class="m">'+esc(p[2]||'')+(p[3]?' · '+p[3].toLocaleString()+'원':'')+(p[4].length?' · 성분 '+p[4].length:'')+srcTag(p[5])+'</div></button>';
+  var top=(hits.length===1)||(hits[0].sc-hits[1].sc>=10&&hits[0].sc>=hits[1].sc*1.2);
+  var SHOW=5,h=head;
+  for(var k=0;k<Math.min(hits.length,SHOW);k++)h+=itemHTML(hits[k].i,{best:k===0&&top});
+  if(hits.length>SHOW){
+    var rest='';
+    for(var k2=SHOW;k2<hits.length;k2++)rest+=itemHTML(hits[k2].i);
+    h+='<div id="more" class="list" hidden>'+rest+'</div>'
+      +'<button class="morebtn" id="morebtn">비슷한 제품 '+(hits.length-SHOW)+'개 더 보기</button>';
   }
-  $('listh').textContent='후보 '+hits.length+'건 — 맞는 것을 고르세요';
+  $('listh').textContent=top?'이 제품이 맞나요?':'비슷한 제품 — 병과 이름을 비교해 고르세요';
   $('results').innerHTML=h;
 }
 
@@ -486,17 +520,13 @@ function search(raw){
     go('list');return;
   }
   var h='';
-  for(var j=0;j<hit.length;j++){
-    var p=P[hit[j]],mk=MY[hit[j]];
-    h+='<button class="item" data-i="'+hit[j]+'">'
-      +'<div class="b">'+esc(p[1])+(mk==='ok'?' · 괜찮았음':mk==='no'?' · 안 맞았음':'')+'</div>'
-      +'<div class="n">'+esc(p[0])+'</div>'
-      +'<div class="m">'+esc(p[2]||'')+(p[3]?' · '+p[3].toLocaleString()+'원':'')+(p[4].length?' · 성분 '+p[4].length:'')+srcTag(p[5])+'</div></button>';
-  }
+  for(var j=0;j<hit.length;j++)h+=itemHTML(hit[j]);
   $('results').innerHTML=h;
   go('list');
 }
 $('results').addEventListener('click',function(e){
+  var mb=e.target.closest('#morebtn');
+  if(mb){$('more').hidden=false;mb.remove();return}
   var b=e.target.closest('[data-i]');if(b)go('detail',+b.dataset.i);
 });
 
@@ -552,7 +582,7 @@ function pageMine(){
   var ok='',no='';
   ks.forEach(function(k){
     var p=P[k];if(!p)return;
-    var row='<button class="item" data-i="'+k+'"><div class="b">'+esc(p[1])+'</div><div class="n">'+esc(p[0])+'</div></button>';
+    var row=itemHTML(+k);
     if(MY[k]==='ok')ok+=row;else no+=row;
   });
   $('page').innerHTML='<h2 class="sec-h">내 기준</h2>'
@@ -576,8 +606,38 @@ function pageTrig(){
 function pageSoon(){
   $('page').innerHTML='<h2 class="sec-h">준비 중</h2><p class="empty">쌍둥이 찾기 · 매장 필터 · 성분 사전은<br>다음 단계에서 붙입니다.<br><br>지금은 찍기 → 검색 → 성분 → 비교까지가<br>실제로 도는지 확인하는 단계입니다.</p>';
 }
-function srcTag(s){return s===0?'<span class="tag oy">공식</span>':s===1?'<span class="tag ds">검증전</span>':'<span class="tag na">성분없음</span>'}
-function srcNote(s){return s===0?'올리브영 상품정보고시에 공개된 전성분입니다.':s===1?'다이소몰 상세이미지에서 읽어 모은 성분이라 아직 검증 전입니다. 글자를 잘못 읽은 것으로 보이는 성분은 걸러냈지만, 빠지거나 틀린 것이 남아 있을 수 있습니다.':'이 제품은 성분을 아직 모으지 못했습니다.'}
+/* 목록 한 줄 = "제품명 / 브랜드" 같은 글꼴로.
+   제품명 앞의 [행사문구]와, 이름 앞에 또 붙은 브랜드는 떼서 알아보기 쉽게 한다 */
+function cleanName(name,brand){
+  var n=String(name||'').replace(/^(\s*[\[\(（【][^\]\)）】]*[\]\)）】]\s*)+/,'').trim();
+  var bn=String(brand||'').replace(/\s+/g,'').toLowerCase();
+  if(bn&&n.replace(/\s+/g,'').toLowerCase().indexOf(bn)===0){
+    var cnt=0,k=0;
+    while(k<n.length&&cnt<bn.length){if(!/\s/.test(n[k]))cnt++;k++}
+    var rest=n.slice(k).trim();
+    if(rest)n=rest;
+  }
+  return n||String(name||'');
+}
+function itemHTML(i,o){
+  o=o||{};
+  var p=P[i],mk=MY[i],fl=[];
+  var brand=p[1],name=p[0];
+  if(!brand){   // 브랜드 칸이 빈 제품: 이름 첫 단어를 브랜드로 보여준다 (표시만)
+    var nm=cleanName(name,'').match(/^(\S{2,12})\s+(.+)$/);
+    if(nm){brand=nm[1];name=nm[2]}
+  }
+  if(o.best)fl.push('<span class="flag best">가장 비슷함</span>');
+  if(mk==='ok')fl.push('<span class="flag ok">괜찮았음</span>');
+  if(mk==='no')fl.push('<span class="flag no">안 맞았음</span>');
+  return '<button class="item'+(o.best?' best':'')+'" data-i="'+i+'">'
+    +(fl.length?'<div class="flags">'+fl.join('')+'</div>':'')
+    +'<div class="nb">'+esc(cleanName(name,brand))+(brand?'<span class="sl"> / </span>'+esc(brand):'')+'</div>'
+    +'<div class="m">'+esc(p[2]||'')+(p[3]?' · '+p[3].toLocaleString()+'원':'')+(p[4].length?' · 성분 '+p[4].length:'')+srcTag(p[5])+'</div>'
+    +'</button>';
+}
+function srcTag(s){return s===0?'<span class="tag oy">공식</span>':s===3?'<span class="tag oy">실물확인</span>':s===1?'<span class="tag ds">검증전</span>':'<span class="tag na">성분없음</span>'}
+function srcNote(s){return s===0?'올리브영 상품정보고시에 공개된 전성분입니다.':s===3?'용기 뒷면 전성분을 한글·영문 표기로 맞춰 보고 확인한 성분입니다.':s===1?'다이소몰 상세이미지에서 읽어 모은 성분이라 아직 검증 전입니다. 글자를 잘못 읽은 것으로 보이는 성분은 걸러냈지만, 빠지거나 틀린 것이 남아 있을 수 있습니다.':'이 제품은 성분을 아직 모으지 못했습니다.'}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 </script>
 
