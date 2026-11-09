@@ -97,8 +97,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
   display:grid;place-items:center;margin-top:-26px;box-shadow:0 6px 18px rgba(196,98,47,.45);
   border:4px solid var(--surface-solid);transition:transform .15s}
 .fab:active{transform:scale(.93)}
-#shot{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
-label.fab,label.tile,label.act{cursor:pointer;-webkit-tap-highlight-color:transparent}
+#shot{position:fixed;bottom:0;right:0;width:1px;height:1px;opacity:.01;border:0;padding:0}
 
 /* 진행 */
 .load{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-top:14px}
@@ -174,11 +173,11 @@ label.fab,label.tile,label.act{cursor:pointer;-webkit-tap-highlight-color:transp
     <div class="sec">
       <h2 class="sec-h">기록 도구</h2>
       <div class="grid2">
-        <label class="tile" for="shot" role="button" tabindex="0">
+        <button class="tile" data-go="scan">
           <span class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M7 12h10"/></svg></span>
           <span class="tt">성분 보기</span>
           <span class="ts">제품 찍어서<br>전성분 확인</span>
-        </label>
+        </button>
         <button class="tile hot" data-go="mine">
           <span class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S4 15.6 4 10a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 5.6-8 10.5-8 10.5Z"/></svg></span>
           <span class="num" id="n-mine">0</span>
@@ -216,7 +215,7 @@ label.fab,label.tile,label.act{cursor:pointer;-webkit-tap-highlight-color:transp
         </button>
       </div>
     </div>
-    <p style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v8</p>
+    <p id="ver" style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v9</p>
   </div>
 
   <!-- 검색 결과 -->
@@ -245,8 +244,8 @@ label.fab,label.tile,label.act{cursor:pointer;-webkit-tap-highlight-color:transp
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20H4Z"/></svg>홈</button>
     <button class="tab" data-go="mine">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S4 15.6 4 10a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 5.6-8 10.5-8 10.5Z"/></svg>내 기준</button>
-    <label class="fab" id="cam" for="shot" role="button" tabindex="0" aria-label="제품 찍기">
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.4-2h7.2L17 8h3v11H4Z"/><circle cx="12" cy="13" r="3.4"/></svg></label>
+    <button class="fab" id="cam" aria-label="제품 찍기">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.4-2h7.2L17 8h3v11H4Z"/><circle cx="12" cy="13" r="3.4"/></svg></button>
     <button class="tab" data-go="safe">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 19 6v6c0 4.2-2.9 7.4-7 8.5-4.1-1.1-7-4.3-7-8.5V6Z"/></svg>안전지대</button>
     <button class="tab" data-go="trig">
@@ -328,6 +327,7 @@ function load(){
     });
 }
 load();
+try{$('ver').textContent='성분일기 v9 · '+(navigator.standalone?'홈 화면 모드':'브라우저 모드')}catch(e){}
 
 /* ---- 화면 전환 ---- */
 function hideAll(){['v-home','v-list','v-detail','v-page'].forEach(function(i){$(i).hidden=true})}
@@ -362,18 +362,13 @@ function counts(){
 
 /* ---- 카메라 → 사진 읽기 → 제품 찾기 ---- */
 var FN_URL='https://jtufhejmunonwvxwgqmz.supabase.co/functions/v1/read-label';
-function shoot(){$('shot').click()}
+function shoot(){toast('버튼이 눌렸습니다 · 선택창을 여는 중…');$('shot').click()}
+$('cam').addEventListener('click',shoot);
+window.onerror=function(m){toast('오류: '+m,6000)};
 /* 카메라는 <label for="shot">이 직접 연다 — 스크립트로 대신 누르면 일부 폰·앱 안 브라우저가 막는다.
    키보드로 누를 때만 대신 눌러 준다. */
 var toastT;
 function toast(m,ms){var t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},ms||2400)}
-document.addEventListener('click',function(e){
-  if(e.target.closest&&e.target.closest('label[for="shot"]'))toast('버튼이 눌렸습니다 · 선택창을 여는 중…');
-});
-document.addEventListener('keydown',function(e){
-  var l=e.target.closest&&e.target.closest('label[for="shot"]');
-  if(l&&(e.key==='Enter'||e.key===' ')){e.preventDefault();shoot()}
-});
 
 
 function norm(s){return String(s==null?'':s).toLowerCase().replace(/[^0-9a-z가-힣]/g,'')}
@@ -468,7 +463,7 @@ var RETAKE='<div class="card" style="margin-top:4px">'
   +'· 다이소 제품이면 <b>가격표</b>(품번이 적힌 스티커) 쪽<br>'
   +'· 그 밖에는 <b>한글 제품명</b>이 보이는 쪽<br>'
   +'· 그래도 안 되면 위 검색창에 브랜드를 두세 글자 치세요</p>'
-  +'<label class="act y" id="retake" for="shot" role="button" style="display:block;text-align:center;width:100%;margin-top:12px;background:var(--accent);border-color:var(--accent);color:#fff">다시 찍기</label>'
+  +'<button class="act y" id="retake" style="width:100%;margin-top:12px;background:var(--accent);border-color:var(--accent);color:#fff">다시 찍기</button>'
   +'</div>';
 function camFail(msg){
   $('listh').textContent='못 찾았습니다';
@@ -569,6 +564,7 @@ function search(raw){
 $('results').addEventListener('click',function(e){
   var mb=e.target.closest('#morebtn');
   if(mb){$('more').hidden=false;mb.remove();return}
+  if(e.target.closest('#retake')){shoot();return}
   var b=e.target.closest('[data-i]');if(b)go('detail',+b.dataset.i);
 });
 
