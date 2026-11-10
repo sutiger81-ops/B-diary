@@ -215,7 +215,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
         </button>
       </div>
     </div>
-    <p id="ver" style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v9</p>
+    <p id="ver" style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v10</p>
   </div>
 
   <!-- 검색 결과 -->
@@ -253,10 +253,18 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
   </div>
 </nav>
 <input type="file" id="shot" accept="image/*">
-<div id="toast" hidden style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--bg);font-size:12.5px;font-weight:500;padding:9px 16px;border-radius:999px;box-shadow:var(--shadow);max-width:88%;text-align:center">버튼이 눌렸습니다</div>
+<div id="camview" hidden style="position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column">
+  <video id="camvid" autoplay playsinline muted style="flex:1;min-height:0;width:100%;object-fit:cover"></video>
+  <div style="display:flex;align-items:center;justify-content:space-around;padding:14px 10px calc(16px + env(safe-area-inset-bottom,0px));background:#000">
+    <button id="camclose" style="color:#fff;font-size:14px;font-weight:700;padding:10px 14px">닫기</button>
+    <button id="camsnap" aria-label="찍기" style="width:66px;height:66px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.35)"></button>
+    <button id="camlib" style="color:#fff;font-size:14px;font-weight:700;padding:10px 14px">보관함</button>
+  </div>
+</div>
+<div id="toast" hidden style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--bg);font-size:12.5px;font-weight:500;padding:9px 16px;border-radius:999px;box-shadow:var(--shadow);max-width:88%;text-align:center">버튼이 눌렸습니다</div>
 
 <script>
-var V=[],P=[],IDX=[],ready=false,lastView='home',pendingShot=null;
+var V=[],P=[],IDX=[],ready=false,lastView='home',pendingShot=null,pendingP=null;
 var $=function(id){return document.getElementById(id)};
 
 /* ---- 내 기록: 폰에만 저장 ---- */
@@ -297,7 +305,7 @@ function load(){
   $('loadbar').parentNode.className='bar run';
   var tick=setInterval(function(){
     if(ready)return;
-    $('loadtx').textContent=(pendingShot?'사진은 받았습니다. 성분 데이터를 마저 받는 중입니다':'성분 데이터를 불러오는 중입니다')+' · '+Math.round((Date.now()-t0)/1000)+'초 · 멈춘 게 아닙니다.';
+    $('loadtx').textContent=((pendingShot||pendingP)?'사진은 받았습니다. 성분 데이터를 마저 받는 중입니다':'성분 데이터를 불러오는 중입니다')+' · '+Math.round((Date.now()-t0)/1000)+'초 · 멈춘 게 아닙니다.';
   },400);
 
   fetch('products.json',{cache:'default'})
@@ -319,7 +327,8 @@ function load(){
       $('loadbar').style.width='100%';
       ready=true;
       setTimeout(function(){$('load').hidden=true;go('home');
-        if(pendingShot){var ps=pendingShot;pendingShot=null;runShot(ps)}},150);
+        if(pendingShot){var ps=pendingShot;pendingShot=null;runShot(ps)}
+        else if(pendingP){var pp=pendingP;pendingP=null;$('listh').textContent='사진 읽는 중';$('results').innerHTML='<p class="empty" id="camstat">사진을 준비하고 있습니다…</p>';go('list');sendPrep(pp)}},150);
     })
     .catch(function(e){
       clearInterval(tick);
@@ -327,7 +336,7 @@ function load(){
     });
 }
 load();
-try{$('ver').textContent='성분일기 v9 · '+(navigator.standalone?'홈 화면 모드':'브라우저 모드')}catch(e){}
+try{$('ver').textContent='성분일기 v10 · '+(navigator.standalone?'홈 화면 모드':'브라우저 모드')}catch(e){}
 
 /* ---- 화면 전환 ---- */
 function hideAll(){['v-home','v-list','v-detail','v-page'].forEach(function(i){$(i).hidden=true})}
@@ -342,7 +351,7 @@ function go(v,arg){
   if(v==='mine'){pageMine()}
   else if(v==='safe'){pageSafe()}
   else if(v==='trig'){pageTrig()}
-  else if(v==='scan'){shoot();return}
+  else if(v==='scan'){openCam();return}
   else if(v==='soon'){pageSoon()}
   else{go('home');return}
   $('v-page').hidden=false;lastView=v;scrollTo(0,0);
@@ -362,9 +371,41 @@ function counts(){
 
 /* ---- 카메라 → 사진 읽기 → 제품 찾기 ---- */
 var FN_URL='https://jtufhejmunonwvxwgqmz.supabase.co/functions/v1/read-label';
-function shoot(){toast('버튼이 눌렸습니다 · 선택창을 여는 중…');$('shot').click()}
-$('cam').addEventListener('click',shoot);
+function shoot(){toast('보관함 선택창을 여는 중…');$('shot').click()}
 window.onerror=function(m){toast('오류: '+m,6000)};
+/* 페이지 안 카메라 — 아이폰이 파일 선택창을 안 열어 줘도 이 길은 권한만 있으면 열린다 */
+var camStream=null;
+function openCam(){
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){shoot();return}
+  toast('카메라를 켜는 중…');
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1600}},audio:false})
+  .then(function(st){camStream=st;var v=$('camvid');v.srcObject=st;$('camview').hidden=false;$('toast').hidden=true;return v.play()})
+  .catch(function(e){
+    toast('카메라를 못 켰습니다 ('+(e&&e.name)+')',5000);
+    camFail('카메라를 켜지 못했습니다. 아래에서 보관함으로 고르거나, 검색창에 브랜드를 쳐 보세요.');
+    go('list');
+  });
+}
+function closeCam(){if(camStream){camStream.getTracks().forEach(function(t){t.stop()});camStream=null}$('camview').hidden=true}
+$('cam').addEventListener('click',openCam);
+$('camclose').addEventListener('click',closeCam);
+$('camlib').addEventListener('click',function(){closeCam();shoot()});
+$('camsnap').addEventListener('click',function(){
+  var v=$('camvid');
+  if(!v.videoWidth){toast('카메라가 아직 준비 중입니다');return}
+  var max=900,r=Math.min(1,max/Math.max(v.videoWidth,v.videoHeight));
+  var c=document.createElement('canvas');c.width=Math.round(v.videoWidth*r);c.height=Math.round(v.videoHeight*r);
+  c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+  var url=c.toDataURL('image/jpeg',0.8);
+  closeCam();
+  var im=$('photo');im.src=url;im.hidden=false;
+  var p={b64:url.split(',')[1],mime:'image/jpeg'};
+  if(!ready){pendingP=p;return}
+  $('listh').textContent='사진 읽는 중';
+  $('results').innerHTML='<p class="empty" id="camstat">사진을 준비하고 있습니다…</p>';
+  go('list');
+  sendPrep(p);
+});
 /* 카메라는 <label for="shot">이 직접 연다 — 스크립트로 대신 누르면 일부 폰·앱 안 브라우저가 막는다.
    키보드로 누를 때만 대신 눌러 준다. */
 var toastT;
@@ -464,6 +505,7 @@ var RETAKE='<div class="card" style="margin-top:4px">'
   +'· 그 밖에는 <b>한글 제품명</b>이 보이는 쪽<br>'
   +'· 그래도 안 되면 위 검색창에 브랜드를 두세 글자 치세요</p>'
   +'<button class="act y" id="retake" style="width:100%;margin-top:12px;background:var(--accent);border-color:var(--accent);color:#fff">다시 찍기</button>'
+  +'<button class="act y" id="retakelib" style="width:100%;margin-top:8px">보관함에서 고르기</button>'
   +'</div>';
 function camFail(msg){
   $('listh').textContent='못 찾았습니다';
@@ -516,6 +558,10 @@ function runShot(f){
   go('list');
   prep(f).then(function(p){
     if(!p){camFail('사진을 읽지 못했습니다.');return}
+    sendPrep(p);
+  });
+}
+function sendPrep(p){
     var t0=Date.now();
     var tick=setInterval(function(){
       var el=$('camstat');
@@ -530,7 +576,6 @@ function runShot(f){
         showMatches(d.fields,d.usage);
       })
       .catch(function(){clearInterval(tick);camFail('지금은 사진 읽기가 안 됩니다.')});
-  });
 }
 
 /* ---- 검색 ---- */
@@ -564,7 +609,8 @@ function search(raw){
 $('results').addEventListener('click',function(e){
   var mb=e.target.closest('#morebtn');
   if(mb){$('more').hidden=false;mb.remove();return}
-  if(e.target.closest('#retake')){shoot();return}
+  if(e.target.closest('#retake')){openCam();return}
+  if(e.target.closest('#retakelib')){shoot();return}
   var b=e.target.closest('[data-i]');if(b)go('detail',+b.dataset.i);
 });
 
