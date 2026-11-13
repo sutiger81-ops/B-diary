@@ -288,7 +288,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
         </button>
       </div>
     </div>
-    <p id="ver" style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v21</p>
+    <p id="ver" style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v22</p>
     <p style="text-align:center;color:var(--muted);font-size:10.5px;margin:4px 16px 0;line-height:1.5">더 나아지도록 찍은 제품명과 못 찾은 기록을 익명으로 모아요 · 사진과 개인정보는 저장하지 않아요</p>
   </div>
 
@@ -437,7 +437,7 @@ function load(){
       for(var i=0;i<P.length;i++)IDX.push((P[i][6]+' '+P[i][1]+' '+P[i][0]).toLowerCase().replace(/\s+/g,''));
       restoreMy();
       try{var okc=0,noc=0;for(var mk in MY){if(MY[mk]==='ok')okc++;else noc++}
-        blog('open',{os:/iPhone|iPad/.test(navigator.userAgent)?'ios':/Android/.test(navigator.userAgent)?'android':'etc',
+        blog('open',{v:APP_V,os:/iPhone|iPad/.test(navigator.userAgent)?'ios':/Android/.test(navigator.userAgent)?'android':'etc',
           app:(matchMedia('(display-mode: standalone)').matches||navigator.standalone)?1:0,ok:okc,no:noc})}catch(_){}
       $('loadbar').parentNode.className='bar';
       $('loadbar').style.width='100%';
@@ -452,7 +452,24 @@ function load(){
     });
 }
 load();
-try{$('ver').textContent='성분일기 v21 · '+(navigator.standalone?'홈 화면 모드':'브라우저 모드')}catch(e){}
+var APP_V=22;
+try{$('ver').textContent='성분일기 v'+APP_V+' · '+(navigator.standalone?'홈 화면 모드':'브라우저 모드')}catch(e){}
+/* ---- 자동 업데이트: 열 때마다 서버의 최신 버전 번호를 확인하고, 더 새 것이 있으면 스스로 바꾼다 ---- */
+function checkUpdate(){
+  try{
+    fetch(location.pathname+'?chk='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.ok?r.text():''})
+      .then(function(t){
+        var m=/id="ver"[^>]*>성분일기 v(\d+)</.exec(t||'');if(!m)return;
+        var nv=+m[1];if(!(nv>APP_V))return;
+        var k='bdiary.upd'+nv;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(_){}
+        if($('v-home').hidden===false||!ready){toast('새 버전 v'+nv+'으로 바꾸는 중…',2500);setTimeout(function(){location.replace(location.pathname+'?v='+nv)},700)}
+        else toast('새 버전 v'+nv+'이 있어요. 홈으로 돌아가면 바뀝니다',3500),window._pendingV=nv;
+      }).catch(function(){});
+  }catch(_){}
+}
+setTimeout(checkUpdate,1200);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)checkUpdate()});
 
 /* ---- 화면 전환 ---- */
 function hideAll(){['v-home','v-list','v-detail','v-page'].forEach(function(i){$(i).hidden=true})}
@@ -461,7 +478,7 @@ function go(v,arg){
   hideAll();
   document.querySelectorAll('.tab').forEach(function(t){
     if(t.dataset.go===v)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current')});
-  if(v==='home'){counts();$('v-home').hidden=false;lastView='home';scrollTo(0,0);return}
+  if(v==='home'){if(window._pendingV){location.replace(location.pathname+'?v='+window._pendingV);return}counts();$('v-home').hidden=false;lastView='home';scrollTo(0,0);return}
   if(v==='list'){$('v-list').hidden=false;lastView='list';scrollTo(0,0);return}
   if(v==='detail'){detail(arg);$('v-detail').hidden=false;scrollTo(0,0);return}
   if(v==='mine'){pageMine()}
