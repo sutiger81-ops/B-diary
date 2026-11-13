@@ -187,6 +187,37 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
 .sub{font-size:12.5px;color:var(--accent);font-weight:700;margin-bottom:3px}
 .meta{font-size:12.5px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
 .h-sm{font-size:13px;font-weight:700;color:var(--ink-2);margin:18px 0 8px}
+
+/* ── 무엇이 좋았나요 · 공통분모 · 닮은꼴 (v19) ── */
+.dim{position:fixed;inset:0;z-index:49;background:rgba(15,16,18,.38)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--surface-solid);border-radius:26px 26px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.15);max-width:620px;margin:0 auto}
+.sheet h3{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.sheet p{margin:6px 0 16px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.why{display:block;width:100%;text-align:left;border-radius:16px;padding:15px 16px;margin-bottom:10px;font-size:14.5px;font-weight:600;background:#eef4ef;color:#2f6e4d;box-shadow:5px 5px 12px rgba(150,165,152,.3),-5px -5px 12px rgba(255,255,255,.95)}
+.why small{display:block;font-size:11.5px;font-weight:500;color:#6f8a7a;margin-top:2px}
+.why.on{background:#e3efe6;box-shadow:inset 4px 4px 9px rgba(140,158,142,.4),inset -4px -4px 9px rgba(255,255,255,.95)}
+.done{font-size:13px;color:var(--good);font-weight:700;margin:6px 2px 12px;line-height:1.5}
+.done.wait{color:var(--muted);font-weight:500}
+.go{display:block;width:100%;border-radius:16px;padding:16px;font-size:15px;font-weight:700;background:var(--accent);color:#fff;box-shadow:0 8px 20px rgba(196,98,47,.35)}
+.later{display:block;width:100%;margin-top:8px;padding:10px;font-size:13px;color:var(--muted)}
+.drawer{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(98px + env(safe-area-inset-bottom,0px));z-index:19;background:var(--surface-solid);border:1px solid var(--line);border-radius:22px;box-shadow:0 -6px 24px rgba(20,22,26,.08);max-width:600px;margin:0 auto}
+.drawer .grab{width:38px;height:4px;border-radius:9px;background:var(--line);margin:8px auto 0}
+.drawer .hd{display:flex;justify-content:space-between;align-items:center;width:100%;padding:12px 18px 14px;font-size:13.5px;font-weight:700;text-align:left}
+.drawer .hd span{color:var(--accent)}
+.drawer .bd{padding:0 18px 16px;max-height:52vh;overflow:auto}
+.den .row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.den .nm{font-size:13px;font-weight:600;line-height:1.35;word-break:keep-all;flex:1;padding-right:10px}
+.den .pc{font-size:11.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.rtag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:4px}
+.rtag.sil{background:#ece9fb;color:#6b55c9}.rtag.col{background:#fdf0de;color:#b97a12}.rtag.moi{background:#e3f1fb;color:#2f78b5}.rtag.frg,.rtag.pre,.rtag.etc{background:var(--line);color:var(--muted)}
+.note{margin-top:12px;background:#f6f4ff;border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.6;color:#4b4370}
+.note b{color:#5a47c2}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .why{background:#1d2a22;color:#7fd0a6;box-shadow:5px 5px 12px rgba(0,0,0,.45),-5px -5px 12px rgba(255,255,255,.03)}
+:root:not([data-theme="light"]) .why small{color:#8fb3a0}
+:root:not([data-theme="light"]) .why.on{background:#17251d;box-shadow:inset 4px 4px 9px rgba(0,0,0,.55),inset -4px -4px 9px rgba(255,255,255,.04)}
+:root:not([data-theme="light"]) .note{background:#24203a;color:#cfc8f2}
+:root:not([data-theme="light"]) .note b{color:#b3a6ff}
+:root:not([data-theme="light"]) .rtag.sil{background:#2a2545;color:#b3a6ff}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -237,7 +268,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
     <div class="sec">
       <h2 class="sec-h">찾기 도구</h2>
       <div class="rail">
-        <button class="tile t-twin" data-go="soon">
+        <button class="tile t-twin" data-go="twins">
           <span class="ic pic"><svg width="36" height="34" viewBox="0 0 28 24" fill="none" stroke="#FF6B4A" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="7.2" r="4.1"/><path d="M3.5 20.5c0-4.1 3.4-7.4 7.5-7.4s7.5 3.3 7.5 7.4"/><path d="M23 8.5v6M20 11.5h6"/></svg></span>
           <span class="tt">닮은꼴 찾기</span><span class="ts">성분이 닮은 제품</span>
         </button>
@@ -251,7 +282,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:
         </button>
       </div>
     </div>
-    <p id="ver" style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v18</p>
+    <p id="ver" style="text-align:center;color:var(--muted);font-size:10.5px;margin:20px 0 0">성분일기 v19</p>
   </div>
 
   <!-- 검색 결과 -->
@@ -305,17 +336,56 @@ var $=function(id){return document.getElementById(id)};
 
 /* ---- 내 기록: 폰에만 저장 ---- */
 /* 기록은 '몇 번째'가 아니라 '품번'으로 저장한다 — 데이터를 정리해 순서가 바뀌어도 안 꼬이게 */
-var MY={};
+var MY={},WHY={};
 function saveMy(){
-  try{var o={};for(var k in MY){if(P[k])o[P[k][6]]=MY[k]}
-      localStorage.setItem('bdiary.my2',JSON.stringify(o))}catch(e){}
+  try{var o={},w={};for(var k in MY){if(P[k]){o[P[k][6]]=MY[k];if(MY[k]==='ok'&&WHY[k])w[P[k][6]]=WHY[k]}}
+      localStorage.setItem('bdiary.my2',JSON.stringify(o));
+      localStorage.setItem('bdiary.why',JSON.stringify(w))}catch(e){}
 }
 function restoreMy(){
   try{var o=JSON.parse(localStorage.getItem('bdiary.my2')||'{}'),map={};
       for(var i=0;i<P.length;i++)map[P[i][6]]=i;
       for(var id in o){if(map[id]!=null)MY[map[id]]=o[id]}
+      var w=JSON.parse(localStorage.getItem('bdiary.why')||'{}');
+      for(var id2 in w){if(map[id2]!=null)WHY[map[id2]]=w[id2]}
       localStorage.removeItem('bdiary.my');}catch(e){}
 }
+/* ── 성분 역할(이름 규칙으로 큰 갈래만) ── */
+function roleOf(n){
+  if(/메티콘|실록세인|실록시|실리케이트|실세스퀴옥세인|실릴레이트|다이메틸실|데케인|아이소헥사데케인/.test(n))return['질감·발림','sil'];
+  if(/크로스폴리머|코폴리머|폴리머/.test(n))return['질감·발림','sil'];
+  if(/산화철|티타늄디옥사이드|징크옥사이드|마이카|[가-힣]+색\d+호|울트라마린|크로뮴/.test(n))return['색·커버','col'];
+  if(/^향료$|리날룰|리모넨|시트로넬|제라니올|쿠마린/.test(n))return['향','frg'];
+  if(/글라이콜|헥산다이올|페녹시에탄올|파라벤|에틸헥실글리세린/.test(n))return['보존·안정','pre'];
+  if(/글리세린|하이알루로|판테놀|세라마이드|베타인|스쿠알란/.test(n))return['보습','moi'];
+  if(/에이트$|왁스|오일|버터|파라핀/.test(n))return['질감·발림','sil'];
+  return['기타','etc'];
+}
+/* ── 전체 DB에서 성분이 몇 % 제품에 들어 있나 ── */
+var FREQ=null,NWITH=0;
+function freqInit(){if(FREQ)return;FREQ={};for(var i=0;i<P.length;i++){var g=P[i][4];if(!g.length)continue;NWITH++;var s={};for(var a=0;a<g.length;a++)if(!s[g[a]]){s[g[a]]=1;FREQ[g[a]]=(FREQ[g[a]]||0)+1}}}
+/* ── 공통분모: 괜찮았던(피부가 편했던 쪽 우선) 제품 2개 이상에 겹치고, 전체의 10% 미만에만 드는 성분 ── */
+function commonDen(reason){
+  freqInit();
+  var ids=[];for(var k in MY){if(MY[k]==='ok'&&(!reason||!WHY[k]||WHY[k]===reason||WHY[k]==='both'))ids.push(+k)}
+  if(ids.length<2)return{n:ids.length,list:[]};
+  var cnt={};ids.forEach(function(i){var s={};P[i][4].forEach(function(x){if(!s[x]){s[x]=1;cnt[x]=(cnt[x]||0)+1}})});
+  var out=[];for(var x in cnt){if(cnt[x]>=2&&FREQ[x]/NWITH<0.10)out.push({i:+x,pct:FREQ[x]/NWITH*100,c:cnt[x]})}
+  out.sort(function(a,b){return a.pct-b.pct});
+  return{n:ids.length,list:out};
+}
+/* ── 닮은꼴: 공통분모를 가장 많이 품은 제품 (이미 기록한 건 제외) ── */
+function twins(den){
+  var s=sets(),tr={};s.trig.forEach(function(t){tr[t]=1});
+  var want={};den.forEach(function(d){want[d.i]=1});
+  var out=[];
+  for(var i=0;i<P.length;i++){if(MY[i]||!P[i][4].length)continue;var h=0,bad=0;
+    for(var a=0;a<P[i][4].length;a++){if(want[P[i][4][a]])h++;if(tr[P[i][4][a]])bad++}
+    if(h>=Math.min(2,den.length))out.push({i:i,h:h,bad:bad})}
+  out.sort(function(a,b){return b.h-a.h||a.bad-b.bad});
+  return out;
+}
+
 
 /* ---- 차집합 엔진: 걸러낸 것에만 있고 괜찮은 것엔 없는 성분 ---- */
 function sets(){
@@ -372,7 +442,7 @@ function load(){
     });
 }
 load();
-try{$('ver').textContent='성분일기 v18 · '+(navigator.standalone?'홈 화면 모드':'브라우저 모드')}catch(e){}
+try{$('ver').textContent='성분일기 v19 · '+(navigator.standalone?'홈 화면 모드':'브라우저 모드')}catch(e){}
 
 /* ---- 화면 전환 ---- */
 function hideAll(){['v-home','v-list','v-detail','v-page'].forEach(function(i){$(i).hidden=true})}
@@ -389,13 +459,14 @@ function go(v,arg){
   else if(v==='trig'){pageTrig()}
   else if(v==='scan'){openCam();return}
   else if(v==='soon'){pageSoon()}
+  else if(v==='twins'){pageTwins(arg)}
   else{go('home');return}
   $('v-page').hidden=false;lastView=v;scrollTo(0,0);
 }
 document.addEventListener('click',function(e){
   var el=e.target.closest('[data-go]');if(!el)return;
   var t=el.dataset.go;
-  if(t==='back'){go(lastView==='list'?'list':'home')}else{go(t)}
+  if(t==='back'){var fromDetail=!$('v-detail').hidden;go(fromDetail&&(lastView==='list'||lastView==='twins')?lastView:(lastView==='list'&&$('v-page').hidden?'list':'home'))}else{go(t)}
 });
 
 function counts(){
@@ -692,9 +763,63 @@ function detail(i){
 $('detail').addEventListener('click',function(e){
   var b=e.target.closest('[data-mark]');if(!b)return;
   var i=+b.dataset.i,m=b.dataset.mark;
-  if(MY[i]===m)delete MY[i];else MY[i]=m;
+  if(MY[i]===m){delete MY[i];delete WHY[i]}else{MY[i]=m;if(m!=='ok')delete WHY[i]}
   saveMy();detail(i);
+  if(MY[i]==='ok')askWhy(i);
 });
+/* ---- 무엇이 좋았나요? ---- */
+function closeSheet(){var a=document.querySelector('.sheet'),b=document.querySelector('.dim');if(a)a.remove();if(b)b.remove()}
+function askWhy(i){
+  closeSheet();
+  var opt=[['skin','피부가 편했어요','자극·트러블 없이 편안했다'],['feel','발림·사용감이 좋았어요','질감·밀착·마무리감이 마음에 들었다'],['both','둘 다요','']];
+  var h='<div class="dim"></div><div class="sheet" role="dialog" aria-label="무엇이 좋았나요"><h3>무엇이 좋았나요?</h3>'
+    +'<p>나눠 두면 \'피부에 맞는 성분\'과 \'취향에 맞는 사용감\'을 따로 찾아드려요</p>';
+  opt.forEach(function(o){h+='<button class="why'+(WHY[i]===o[0]?' on':'')+'" data-why="'+o[0]+'">'+o[1]+(o[2]?'<small>'+o[2]+'</small>':'')+'</button>'});
+  h+='<div id="whynext"></div><button class="later" data-close="1">나중에 볼게요</button></div>';
+  document.body.insertAdjacentHTML('beforeend',h);
+  var sh=document.querySelector('.sheet');
+  document.querySelector('.dim').addEventListener('click',closeSheet);
+  sh.addEventListener('click',function(e){
+    if(e.target.closest('[data-close]')){closeSheet();return}
+    if(e.target.closest('.go')){var r=e.target.closest('.go').dataset.r;closeSheet();go('twins',r);return}
+    var b=e.target.closest('[data-why]');if(!b)return;
+    WHY[i]=b.dataset.why;saveMy();
+    sh.querySelectorAll('.why').forEach(function(x){x.classList.toggle('on',x===b)});
+    var okN=0;for(var k in MY)if(MY[k]==='ok')okN++;
+    var d=commonDen(null),nx=$('whynext');
+    if(okN<2){nx.innerHTML='<div class="done wait">✓ 기록했어요<br>괜찮았던 제품이 하나 더 쌓이면 공통분모를 찾아드려요</div>';return}
+    if(!d.list.length){nx.innerHTML='<div class="done wait">✓ 기록했어요 — 괜찮았던 제품 '+okN+'개<br>아직 서로 겹치는 흔하지 않은 성분이 없어요. 기록이 쌓이면 찾아드릴게요</div>';return}
+    nx.innerHTML='<div class="done">✓ 기록했어요 — 괜찮았던 제품이 '+okN+'개가 됐어요</div><button class="go" data-r="'+WHY[i]+'">이 공통분모를 가진 제품 보기 →</button>';
+    sh.querySelector('.later').textContent='나중에 볼게요';
+  });
+}
+/* ---- 닮은꼴: 공통분모를 가진 제품 + 아래 서랍 ---- */
+var TWR=null;
+function pageTwins(reason){
+  if(reason===undefined)reason=TWR;TWR=reason;
+  var pick=(reason==='skin'||reason==='feel')?reason:null,d=commonDen(pick),label='괜찮았던';
+  if(pick){var cnt=0;for(var k in MY)if(MY[k]==='ok'&&(!WHY[k]||WHY[k]===pick||WHY[k]==='both'))cnt++;
+    if(cnt<2||!d.list.length){pick=null;d=commonDen(null)}else label=pick==='skin'?'피부가 편했던':'사용감이 좋았던'}
+  if(d.n<2||!d.list.length){
+    $('page').innerHTML='<h2 class="sec-h">닮은꼴 찾기</h2><p class="empty">괜찮았던 제품을 2개 이상 기록하면<br>그 제품들의 공통분모를 가진 제품을 찾아드려요.'
+      +(d.n>=2?'<br><br>지금은 괜찮았던 제품끼리 겹치는<br>흔하지 않은 성분이 아직 없어요.':'')+'</p>';return}
+  var t=twins(d.list),SHOW=30,h='<h2 class="sec-h">이 공통분모를 가진 제품</h2>';
+  if(!t.length){h+='<p class="empty">이 공통분모를 함께 가진 다른 제품을 아직 못 찾았어요.</p>'}
+  else{h+='<div class="list">';
+    t.slice(0,SHOW).forEach(function(x){var p=P[x.i];
+      h+='<button class="item" data-i="'+x.i+'"><div class="flags"><span class="flag ok">공통분모 '+x.h+'/'+d.list.length+'</span>'+(x.bad?'<span class="flag no">주의 성분 '+x.bad+'개</span>':'')+'</div>'
+        +'<div class="nb">'+esc(cleanName(p[0],p[1]))+(p[1]?'<span class="sl"> / </span>'+esc(p[1]):'')+'</div>'
+        +'<div class="m">'+esc(p[2]||'')+(p[3]?' · '+p[3].toLocaleString()+'원':'')+' · 성분 '+p[4].length+srcTag(p[5])+'</div></button>'});
+    h+='</div><p style="font-size:11.5px;color:var(--muted);margin:12px 4px">'+(t.length>SHOW?'전체 '+t.length+'개 중 상위 '+SHOW+'개 · ':'')+'이미 기록한 제품은 뺐습니다. 추천이 아니라 성분이 닮은 제품이고, 고르는 건 당신입니다.</p>'}
+  var sil=0,rows='';d.list.forEach(function(x){var r=roleOf(V[x.i]);if(r[1]==='sil')sil++;
+    rows+='<div class="row"><div class="nm">'+esc(V[x.i])+'<br><span class="rtag '+r[1]+'">'+r[0]+'</span></div><div class="pc">전체의 '+x.pct.toFixed(1)+'%</div></div>'});
+  h+='<div style="height:96px"></div><div class="drawer"><div class="grab"></div><button class="hd" id="drhd">왜 이 제품들인가요? <span>공통분모 '+d.list.length+'개 보기 ▲</span></button>'
+    +'<div class="bd den" hidden><div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+label+' 제품 '+d.n+'개에 겹치고, 시중에 흔하지 않은 성분</div>'+rows
+    +(sil*2>=d.list.length?'<div class="note">공통점이 대부분 <b>발림·질감을 만드는 성분</b>입니다. 피부에 잘 맞았다기보다 <b>바르는 느낌이 좋았던 것</b>일 수도 있어요. 판단은 당신의 기록으로 하세요.</div>':'<div class="note">'+label+' 제품들의 공통점입니다. 원인으로 밝혀진 것이 아니라 겹치는 지점이고, 판단은 당신의 기록으로 하세요.</div>')
+    +'</div></div>';
+  $('page').innerHTML=h;
+  $('drhd').addEventListener('click',function(){var bd=this.nextElementSibling,op=bd.hidden;bd.hidden=!op;this.querySelector('span').textContent=op?'접기 ▼':'공통분모 '+d.list.length+'개 보기 ▲'});
+}
 
 /* ---- 목록 화면들 ---- */
 function pageMine(){
